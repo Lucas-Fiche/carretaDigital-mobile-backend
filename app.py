@@ -142,7 +142,8 @@ def obter_dados():
             "top_estados": top_estados,
             "top_escolas": top_escolas,
             "generos": generos
-        }
+        },
+        "mapa": dados_mapa
     }
 
 @app.route('/dados')
