@@ -73,16 +73,44 @@ def obter_dados():
     else:
         top_escolas = {}
 
+    COORDENADAS_ESTADOS = {
+        "DISTRITO FEDERAL": {"lat": -15.7998, "lng": -47.8645},
+        "MARANHAO": {"lat": -4.9609, "lng": -45.2744},
+        "MATO GROSSO DO SUL": {"lat": -20.7722, "lng": -54.7852},
+        "PERNAMBUCO": {"lat": -8.8137, "lng": -36.9541},
+        "RIO DE JANEIRO": {"lat": -22.9068, "lng": -43.1729},
+        "RIO GRANDE DO SUL": {"lat": -30.0346, "lng": -51.2177},
+        "SANTA CATARINA": {"lat": -27.2423, "lng": -50.2189},
+    }
+
     total_estados = 0
     top_estados = {}
+    dados_mapa = [] # Lista nova para o mapa
+
     if 'ESTADO' in df.columns:
-        # Limpeza do ", Brasil"
+        # Limpeza
         df['ESTADO'] = df['ESTADO'].astype(str).str.replace(', Brasil', '').str.strip()
-        # Filtra vazios
         df_estados = df[df['ESTADO'] != '']
+        
         total_estados = df_estados['ESTADO'].nunique()
-        # Ranking Top 5 Estados
         top_estados = df_estados['ESTADO'].value_counts().head(5).to_dict()
+        
+        # LÓGICA DO MAPA:
+        # Conta quantos alunos tem em CADA estado (não só no top 5)
+        contagem_todos_estados = df_estados['ESTADO'].value_counts().to_dict()
+        
+        for estado, qtd in contagem_todos_estados.items():
+            # Remove acentos para bater com a chave do dicionário (ex: MARANHÃO -> MARANHAO)
+            chave = estado.upper().replace('Ã', 'A').replace('Õ', 'O').replace('Ç', 'C').replace('Á', 'A').replace('É', 'E').replace('Í', 'I').replace('Ó', 'O').replace('Ú', 'U').replace('Â', 'A').replace('Ê', 'E')
+            
+            if chave in COORDENADAS_ESTADOS:
+                coords = COORDENADAS_ESTADOS[chave]
+                dados_mapa.append({
+                    "estado": estado,
+                    "qtd": qtd,
+                    "lat": coords['lat'],
+                    "lng": coords['lng']
+                })
 
     # 3. CURSOS 
     cursos = {}
