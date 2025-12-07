@@ -54,25 +54,21 @@ def obter_dados():
     # Remove colunas com cabeçalhos vazios
     df = df.loc[:, df.columns != '']
 
-    # 5. Cálculos Estatísticos
-    # --- CÁLCULOS SELECIONADOS PARA O APP ---
+    # 5. Cálculos ESTRATÉGICOS
 
-    # 1. KPIs GERAIS
+    # KPI 1. TOTAL DE ALUNOS
     total_alunos = len(df)
     
-    # Defina a meta aqui (ou leia de outra aba se preferir)
+    # KPI 2. META DO PROJETO
     META_DO_PROJETO = 23500 
     porcentagem_meta = (total_alunos / META_DO_PROJETO) if META_DO_PROJETO > 0 else 0
 
-    # 2. ESCOLAS E ESTADOS
+    # KPI 3. NÚMERO DE ESCOLAS
     total_escolas = 0
     if 'ESCOLA' in df.columns:
         total_escolas = df['ESCOLA'].nunique()
-        # Top 5 Escolas
-        top_escolas = df['ESCOLA'].value_counts().head(5).to_dict()
-    else:
-        top_escolas = {}
 
+    # KPI 4. MAPA DE CALOR | TOTAL DE ESTADOS | ALUNOS POR ESTADO
     COORDENADAS_ESTADOS = {
         "DISTRITO FEDERAL": {"lat": -15.7998, "lng": -47.8645},
         "MARANHAO": {"lat": -4.9609, "lng": -45.2744},
@@ -85,7 +81,8 @@ def obter_dados():
 
     total_estados = 0
     top_estados = {}
-    dados_mapa = [] # Lista nova para o mapa
+    contagem_alunos_por_estados = {}
+    dados_mapa = [] 
 
     if 'ESTADO' in df.columns:
         # Limpeza
@@ -94,12 +91,9 @@ def obter_dados():
         
         total_estados = df_estados['ESTADO'].nunique()
         top_estados = df_estados['ESTADO'].value_counts().head(5).to_dict()
+        contagem_alunos_por_estados = df_estados['ESTADO'].value_counts().to_dict()
         
-        # LÓGICA DO MAPA:
-        # Conta quantos alunos tem em CADA estado (não só no top 5)
-        contagem_todos_estados = df_estados['ESTADO'].value_counts().to_dict()
-        
-        for estado, qtd in contagem_todos_estados.items():
+        for estado, qtd in contagem_alunos_por_estados.items():
             # Remove acentos para bater com a chave do dicionário (ex: MARANHÃO -> MARANHAO)
             chave = estado.upper().replace('Ã', 'A').replace('Õ', 'O').replace('Ç', 'C').replace('Á', 'A').replace('É', 'E').replace('Í', 'I').replace('Ó', 'O').replace('Ú', 'U').replace('Â', 'A').replace('Ê', 'E')
             
@@ -107,26 +101,43 @@ def obter_dados():
                 coords = COORDENADAS_ESTADOS[chave]
                 dados_mapa.append({
                     "estado": estado,
-                    "qtd": qtd,
+                    "qtd": int(qtd),
                     "lat": coords['lat'],
                     "lng": coords['lng']
                 })
 
-    # 3. CURSOS 
-    cursos = {}
+    # KPI 5. CURSOS 
+    alunos_por_curso = {}
     if 'CURSO' in df.columns:
-        cursos = df['CURSO'].value_counts().head(5).to_dict()
+        alunos_por_curso = df['CURSO'].value_counts().to_dict()
 
-    # 4. IMPACTO SOCIAL (Gênero e PCD)
-    generos = {}
+    # KPI 6. Gênero e PCD
+    contagem_genero = {
+        "Masculino": 0,
+        "Feminino": 0,
+        "Outros": 0,
+    }
+
     if 'SEXO' in df.columns:
-        generos = df['SEXO'].value_counts().to_dict()
+        sexo = df['SEXO'].astype(str).str.strip()
 
-    total_pcd = 0
+        # Conta apenas os exatos
+        qtd_masc = int((sexo == 'Masculino').sum())
+        qtd_fem = int((sexo == 'Feminino').sum())
+
+        # Preenche o dicionário
+        contagem_genero["Masculino"] = qtd_masc
+        contagem_genero["Feminino"] = qtd_fem
+
+        # Total de linhas - (Homens + Mulheres) = Incompletos/Erros/Vazios
+        contagem_genero["Outros"] = len(df) - (qtd_masc + qtd_fem)
+
+
+    contagem_pcd = 0
+    col_pcd = 'PESSOA COM DEFICIÊNCIA (PCD)'
     if 'PESSOA COM DEFICIÊNCIA (PCD)' in df.columns:
-        col_pcd = 'PESSOA COM DEFICIÊNCIA (PCD)'
-        # Conta quantos "Sim" (ajuste conforme sua planilha: 'Sim', 'SIM', 'S')
-        total_pcd = df[df[col_pcd].astype(str).str.upper() == 'SIM'].shape[0]
+        contagem_pcd = df[col_pcd].astype(str).str.strip().str.upper().isin(['SIM', 'S', 'YES']).sum()
+        
 
     return {
         "kpis": {
@@ -135,13 +146,13 @@ def obter_dados():
             "porcentagem_concluida": float(f"{porcentagem_meta:.2f}"), 
             "total_estados": int(total_estados),
             "total_escolas": int(total_escolas),
-            "total_pcd": int(total_pcd)
         },
         "graficos": {
-            "top_cursos": cursos,
+            "alunos_por_curso": alunos_por_curso,
+            "alunos_por_estado": contagem_alunos_por_estados,
             "top_estados": top_estados,
-            "top_escolas": top_escolas,
-            "generos": generos
+            "generos": contagem_genero,
+            "total_pcd": int(contagem_pcd)
         },
         "mapa": dados_mapa
     }
