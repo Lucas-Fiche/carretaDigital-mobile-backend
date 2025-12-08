@@ -68,7 +68,7 @@ def obter_dados():
     if 'ESCOLA' in df.columns:
         total_escolas = df['ESCOLA'].nunique()
 
-    # KPI 4. MAPA DE CALOR | TOTAL DE ESTADOS | ALUNOS POR ESTADO
+    # KPI 4. MAPA DE CALOR | TOTAL DE ESTADOS | ALUNOS POR ESTADO 
     COORDENADAS_ESTADOS = {
         "DISTRITO FEDERAL": {"lat": -15.7998, "lng": -47.8645},
         "MARANHAO": {"lat": -4.9609, "lng": -45.2744},
@@ -105,6 +105,25 @@ def obter_dados():
                     "lat": coords['lat'],
                     "lng": coords['lng']
                 })
+
+    # KPI 5. MUNICÍPIOS
+    municipios_por_estado = {}
+    total_municipios = 0
+    
+    if 'ESTADO' in df.columns and 'MUNICÍPIO' in df.columns:
+        df_limpo = df[(df['ESTADO'] != '') & (df['MUNICÍPIO'] != '')]
+        agrupamento = df_limpo.groupby(['ESTADO', 'MUNICÍPIO']).size()
+        
+        for (estado, municipio), qtd in agrupamento.items():
+            if estado not in municipios_por_estado:
+                municipios_por_estado[estado] = {}
+            municipios_por_estado[estado][municipio] = int(qtd)
+
+        # CÁLCULO TOTAL CORRIGIDO
+        for estado, cidades in municipios_por_estado.items():
+            total_municipios += len(cidades)
+        
+        total_municipios -= 1 # No Distrito Federal, Asa Sul e Asa Norte são UMA região administrativa (DF).
 
     # KPI 5. CURSOS 
     alunos_por_curso = {}
@@ -146,10 +165,12 @@ def obter_dados():
             "porcentagem_concluida": float(f"{porcentagem_meta:.2f}"), 
             "total_estados": int(total_estados),
             "total_escolas": int(total_escolas),
+            "total_municipios": int(total_municipios),
         },
         "graficos": {
             "alunos_por_curso": alunos_por_curso,
             "alunos_por_estado": contagem_alunos_por_estados,
+            "municipios_por_estado": municipios_por_estado,
             "top_estados": top_estados,
             "generos": contagem_genero,
             "total_pcd": int(contagem_pcd)
