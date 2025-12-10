@@ -4,6 +4,8 @@ import pandas as pd # Fornece funções para manipulação de dados
 from oauth2client.service_account import ServiceAccountCredentials # Fornece funções para criar credenciais de autenticação em APIs do Google
 from flask import Flask, jsonify # Fornece a classe principal do Framework Flask e operações para manipular arquivos JSON
 from flask_cors import CORS # Fornece suporte a CORS para integração com o Frontend
+from dotenv import load_dotenv # Importa a blibioteca para carregar as variáveis do arquivo .env
+load_dotenv() # Carrega as variáveis do arquivo .env
 
 # Criando a aplicação Flask em app
 app = Flask(__name__)
@@ -22,8 +24,17 @@ def obter_dados():
     client = gspread.authorize(creds)
     
     # 2. Abrir a Planilha pelo ID
-    # Abre a planilha "TABELA - BASE DE DADOS" do Google Sheets a partir do ID
-    planilha = client.open_by_key("1XZkJVMtfeXUvylE04VHO-KCsz8C9l5apj_sthZb4Uzo")
+    
+    # Busca o ID nas variáveis de ambiente no .env
+    spreadsheet_id = os.getenv("SPREADSHEET_ID")
+    
+    # Mensagem de erro caso não encontre a variável no .env
+    if not spreadsheet_id:
+        return {"erro": "ID da planilha não configurado no servidor"}
+    
+    # Abre a planilha "TABELA - BASE DE DADOS" do Google Sheets a partir do ID armazenado na variável de ambiente
+    planilha = client.open_by_key(spreadsheet_id)
+
     # Escolhe a aba específicada "TABELA - BASE DE DADOS"
     aba = planilha.worksheet("TABELA - BASE DE DADOS")
     # Log para confirmar no terminal que a aba desejada está sendo aberta
