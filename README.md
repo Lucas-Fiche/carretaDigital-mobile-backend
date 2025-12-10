@@ -38,6 +38,10 @@ A API conecta o aplicativo móvel à base de dados central no Google Sheets (`TA
 
 * [Gspread](https://docs.gspread.org/): Cliente para interação com Google Sheets.
 
+**Hospedagem do Backend:** 
+
+* [Render.com](https://render.com/)
+
 **Frontend (Consumidor)**
 
 * **Dart / Flutter:** Tecnologia utilizada no desenvolvimento do aplicativo móvel que consome esta API.
@@ -161,4 +165,4 @@ Endpoint principal consumido pelo App Flutter. Retorna todos os KPIs, gráficos 
 
 # 📝 Licença
 
-Esta aplicação é de uso interno do **Projeto Carreta Digital**.
+Esta aplicação é de uso interno do **Projeto Carreta Digital** e foi desenvolvida por **Lucas Fiche**.
