@@ -6,9 +6,9 @@ O objetivo principal desta aplicação é fornecer uma interface de dados para o
 
 # 🎯 Objetivo e Contexto
 
-A API conecta o aplicativo móvel à base de dados central no Google Sheets ("TABELA - BASE DE DADOS"), processando milhares de registros para entregar métricas consolidadas sobre:
+A API conecta o aplicativo móvel à base de dados central no Google Sheets (`TABELA - BASE DE DADOS`), processando milhares de registros para entregar métricas consolidadas sobre:
 
-* **Atingimento da Meta:** Monitoramento do progresso rumo à meta de 23.500 alunos.
+* **Atingimento da Meta:** Monitoramento do progresso rumo à meta de **23.500** alunos.
 
 * **Impacto Geográfico:** Visualização da presença do projeto nos estados e municípios.
 
@@ -18,7 +18,7 @@ A API conecta o aplicativo móvel à base de dados central no Google Sheets ("TA
 
 * **Conexão Segura:** Autenticação com a API do Google Sheets via Service Account (OAuth2).
 
-* **Processamento de Dados:** Utiliza pandas para limpeza, normalização e cálculo de métricas complexas.
+* **Processamento de Dados:** Utiliza `pandas` para limpeza, normalização e cálculo de métricas complexas.
 
 * **Integração Mobile:** Fornece endpoints JSON otimizados para consumo pelo aplicativo Flutter.
 
@@ -28,7 +28,7 @@ A API conecta o aplicativo móvel à base de dados central no Google Sheets ("TA
 
 # 🛠️ Tecnologias Utilizadas
 
-Backend
+**Backend**
 
 * [Python 3.x:](https://www.python.org/): Linguagem base.
 
@@ -44,12 +44,12 @@ Backend
 
 # ⚙️ Pré-requisitos e Configuração
 
-1. Clonar o Repositório
+**1. Clonar o Repositório**
 
 git clone [https://seu-repositorio.git](https://seu-repositorio.git)
 cd nome-da-pasta
 
-2. Configurar o Ambiente Virtual (Recomendado)
+**2. Configurar o Ambiente Virtual (Recomendado)**
 
 A pasta `.venv` (conforme estrutura do projeto) é onde as bibliotecas ficam isoladas.
 
@@ -63,7 +63,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-3. Instalar Dependências
+**3. Instalar Dependências**
 
 Com o ambiente virtual ativo, instale os pacotes listados em `requirements.txt`:
 
@@ -71,11 +71,12 @@ Com o ambiente virtual ativo, instale os pacotes listados em `requirements.txt`:
 pip install -r requirements.txt
 ```
 
-4. Configurar Credenciais do Google (CRÍTICO) ⚠️
+**4. Configurar Credenciais do Google (CRÍTICO) ⚠️**
 
 Para que a aplicação acesse a planilha do projeto, é necessário um arquivo de credenciais de **Conta de Serviço (Service Account)**.
 
-1. Obtenha o arquivo JSON da Service Account autorizada no Google Cloud.2. Renomeie o arquivo para `credentials.json`.
+1. Obtenha o arquivo JSON da Service Account autorizada no Google Cloud.
+2. Renomeie o arquivo para `credentials.json`.
 3. Coloque-o na raiz do projeto.
 4. **Importante:** A planilha da `BASE DE DADOS` deve estar compartilhada com o e-mail dessa Service Account.
 
