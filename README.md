@@ -40,7 +40,9 @@ A API conecta o aplicativo móvel à base de dados central no Google Sheets (`TA
 
 **Hospedagem do Backend:** 
 
-* [Render.com](https://render.com/)
+* [render.com](https://render.com/): Hospeda a API.
+
+* [cron-job.org](https://console.cron-job.org/jobs): Pinga a API a cada 10 minutos para que a aplicação permaneça ativa.
 
 **Frontend (Consumidor)**
 
