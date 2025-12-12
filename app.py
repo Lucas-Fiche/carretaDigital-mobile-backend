@@ -2,7 +2,7 @@ import os # Fornece funções para interagir com o SO
 import gspread # Fornece funções para acesso ao Google Sheets
 import pandas as pd # Fornece funções para manipulação de dados
 from oauth2client.service_account import ServiceAccountCredentials # Fornece funções para criar credenciais de autenticação em APIs do Google
-from flask import Flask, jsonify # Fornece a classe principal do Framework Flask e operações para manipular arquivos JSON
+from flask import Flask, jsonify, request # Fornece a classe principal do Framework Flask e operações para manipular arquivos JSON
 from flask_cors import CORS # Fornece suporte a CORS para integração com o Frontend
 from dotenv import load_dotenv # Importa a blibioteca para carregar as variáveis do arquivo .env
 load_dotenv() # Carrega as variáveis do arquivo .env
@@ -218,7 +218,7 @@ def obter_dados(df):
         # Transforma todos os dados da coluna em string, remove os espaços das pontas, deixa tudo em maiúsculo e, sendo algo como SIM, S ou YES ele faz a soma.
         contagem_pcd = df[COL_PCD].astype(str).str.strip().str.upper().isin(['SIM', 'S', 'YES']).sum()
         
-    # Retornos feitos pela API no arquivo JSON
+    # Retornos da API
     return {
         "kpis": {
             "total_alunos": int(total_alunos),
@@ -242,30 +242,31 @@ def obter_dados(df):
 def busca_certificado(df):
     nome_pesquisa = request.args.get('nome')
     if not nome_pesquisa:
-        return jsonify({"erro": "Informe um nome"}), 400
+        raise ValueError("Informe um nome")
 
-    try:
-        df = carregar_dataframe()
-        if COL_NOME not in df.columns or COL_LINK not in df.columns:
-            return jsonify({"erro": f"Colunas não encontradas. Colunas disponíveis: {list(df.columns)}"}), 500
+    if COL_NOME not in df.columns or COL_LINK not in df.columns or COL_ESTADO not in df.columns:
+        raise Exception(f"Colunas obrigatórias não encontradas na planilha. Disponíveis: {list(df.columns)}")
 
-        filtro = df[df[COL_NOME].str.contains(nome_pesquisa, case=False, na=False)]
-        resultados = []
+    if COL_ESTADO in df.columns:
+        df[COL_ESTADO] = df[COL_ESTADO].astype(str).str.replace(', Brasil', '').str.strip()
 
-        for _, linha in filtro.iterrows():
-            resultados.append({
-                "nome": linha[COL_NOME],
-                "curso": linha[COL_CURSO],
-                "link": linha[COL_LINK]
-            })
+    filtro = df[df[COL_NOME].str.contains(nome_pesquisa, case=False, na=False)]
+    resultados = []
 
-            return jsonify({
-                "total": len(resultados),
-                "resultados": resultados
-            })
+    for _, linha in filtro.iterrows():
+        resultados.append({
+            "nome": linha[COL_NOME],
+            "estado": linha[COL_ESTADO],
+            "curso": linha[COL_CURSO],
+            "link": linha[COL_LINK]
+        })
 
-    except Exception as e:
-        return jsonify({"erro": str(e)}), 500
+    return {
+        "total": len(resultados),
+        "resultados": resultados
+    }
+
+    
     
 @app.route('/dados')
 def dados():
@@ -282,8 +283,13 @@ def certificados():
         df = carregar_dataframe()
         obter_certificados = busca_certificado(df)
         return jsonify(obter_certificados)
+    except ValueError as e:
+        # Erros de validação (ex: falta nome) retornam 400
+        return jsonify({"erro": str(e)}), 400
+        
     except Exception as e:
-        return jsonify({"erro": str(e)}), 500
+        # Erros gerais (ex: planilha off, colunas erradas) retornam 500
+        return jsonify({"erro": "Erro interno: " + str(e)}), 500
 
 if __name__ == '__main__':
     # Rodando na porta 5000
