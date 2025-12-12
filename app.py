@@ -12,7 +12,17 @@ app = Flask(__name__)
 # Adiciona CORS na aplicação app
 CORS(app)
 
-def obter_dados():
+# DEFINIÇÃO DAS COLUNAS COMO VARIÁVEIS GLOBAIS
+COL_NOME = 'NOME'
+COL_ESCOLA = 'ESCOLA'
+COL_ESTADO = 'ESTADO'
+COL_MUNICIPIO = 'MUNICÍPIO'
+COL_CURSO = 'CURSO'
+COL_SEXO = 'SEXO'
+COL_PCD = 'PESSOA COM DEFICIÊNCIA (PCD)'
+COL_LINK = 'LINK DRIVE'
+
+def carregar_dataframe():
     # 1. Conexão com Google Sheets
     # A lista scope define quais permissões a aplicação deve pedir à API do Google
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -30,7 +40,7 @@ def obter_dados():
     
     # Mensagem de erro caso não encontre a variável no .env
     if not spreadsheet_id:
-        return {"erro": "ID da planilha não configurado no servidor"}
+        raise Exception("ID da planilha não configurado")
     
     # Abre a planilha "TABELA - BASE DE DADOS" do Google Sheets a partir do ID armazenado na variável de ambiente
     planilha = client.open_by_key(spreadsheet_id)
@@ -65,15 +75,14 @@ def obter_dados():
     # Remove colunas com cabeçalhos vazios
     df = df.loc[:, df.columns != '']
 
-    # 5. Cálculos ESTRATÉGICOS
+    return df
 
-    # DEFINIÇÃO DAS COLUNAS
-    COL_ESCOLA = 'ESCOLA'
-    COL_ESTADO = 'ESTADO'
-    COL_MUNICIPIO = 'MUNICÍPIO'
-    COL_CURSO = 'CURSO'
-    COL_SEXO = 'SEXO'
-    COL_PCD = 'PESSOA COM DEFICIÊNCIA (PCD)'
+def obter_dados(df):
+
+    if df.empty:
+        return {"mensagem": "Base de Dados vazia", "kpis": {}}
+
+    # 5. Cálculos ESTRATÉGICOS
 
     # KPI 1. TOTAL DE ALUNOS
     # Aqui contamos a quantidade de linhas do dataframe e armazenamos na variável total_alunos
@@ -230,11 +239,49 @@ def obter_dados():
         "mapa": dados_mapa
     }
 
+def busca_certificado(df):
+    nome_pesquisa = request.args.get('nome')
+    if not nome_pesquisa:
+        return jsonify({"erro": "Informe um nome"}), 400
+
+    try:
+        df = carregar_dataframe()
+        if COL_NOME not in df.columns or COL_LINK not in df.columns:
+            return jsonify({"erro": f"Colunas não encontradas. Colunas disponíveis: {list(df.columns)}"}), 500
+
+        filtro = df[df[COL_NOME].str.contains(nome_pesquisa, case=False, na=False)]
+        resultados = []
+
+        for _, linha in filtro.iterrows():
+            resultados.append({
+                "nome": linha[COL_NOME],
+                "curso": linha[COL_CURSO],
+                "link": linha[COL_LINK]
+            })
+
+            return jsonify({
+                "total": len(resultados),
+                "resultados": resultados
+            })
+
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+    
 @app.route('/dados')
 def dados():
     try:
-        analise = obter_dados()
+        df = carregar_dataframe()
+        analise = obter_dados(df)
         return jsonify(analise)
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+    
+@app.route('/certificados')
+def certificados():
+    try:
+        df = carregar_dataframe()
+        obter_certificados = busca_certificado(df)
+        return jsonify(obter_certificados)
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
 
