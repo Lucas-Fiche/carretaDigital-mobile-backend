@@ -1,8 +1,11 @@
 import os # Fornece funções para interagir com o SO
+import time
 import gspread # Fornece funções para acesso ao Google Sheets
 import pandas as pd # Fornece funções para manipulação de dados
 from oauth2client.service_account import ServiceAccountCredentials # Fornece funções para criar credenciais de autenticação em APIs do Google
 from flask import Flask, jsonify, request # Fornece a classe principal do Framework Flask e operações para manipular arquivos JSON
+from flask_compress import Compress
+from datetime import datetime, timezone
 from flask_cors import CORS # Fornece suporte a CORS para integração com o Frontend
 from dotenv import load_dotenv # Importa a blibioteca para carregar as variáveis do arquivo .env
 load_dotenv() # Carrega as variáveis do arquivo .env
@@ -11,6 +14,12 @@ load_dotenv() # Carrega as variáveis do arquivo .env
 app = Flask(__name__)
 # Adiciona CORS na aplicação app
 CORS(app)
+# Habilita compressão gzip automática nas respostas
+Compress(app)
+
+# Cache em memória compartilhado entre endpoints (TTL de 10 minutos)
+_cache = {"df": None, "ts": 0.0}
+CACHE_TTL = 600
 
 # DEFINIÇÃO DAS COLUNAS COMO VARIÁVEIS GLOBAIS
 COL_NOME = 'NOME'
@@ -23,6 +32,10 @@ COL_PCD = 'PESSOA COM DEFICIÊNCIA (PCD)'
 COL_LINK = 'LINK DRIVE'
 
 def carregar_dataframe():
+    if _cache["df"] is not None and time.time() - _cache["ts"] < CACHE_TTL:
+        print("Cache hit: retornando dataframe em memória")
+        return _cache["df"]
+
     # 1. Conexão com Google Sheets
     # A lista scope define quais permissões a aplicação deve pedir à API do Google
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -75,6 +88,8 @@ def carregar_dataframe():
     # Remove colunas com cabeçalhos vazios
     df = df.loc[:, df.columns != '']
 
+    _cache["df"] = df
+    _cache["ts"] = time.time()
     return df
 
 def obter_dados(df):
@@ -268,6 +283,16 @@ def busca_certificado(df):
 
     
     
+@app.route('/cache/clear', methods=['POST'])
+def cache_clear():
+    _cache["df"] = None
+    _cache["ts"] = 0.0
+    return jsonify({"status": "ok", "mensagem": "Cache limpo com sucesso"})
+
+@app.route('/health')
+def health():
+    return jsonify({"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()})
+
 @app.route('/dados')
 def dados():
     try:
