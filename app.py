@@ -3,7 +3,7 @@ import time
 import gspread # Fornece funções para acesso ao Google Sheets
 import pandas as pd # Fornece funções para manipulação de dados
 from oauth2client.service_account import ServiceAccountCredentials # Fornece funções para criar credenciais de autenticação em APIs do Google
-from flask import Flask, jsonify, request # Fornece a classe principal do Framework Flask e operações para manipular arquivos JSON
+from flask import Flask, jsonify # Fornece a classe principal do Framework Flask e operações para manipular arquivos JSON
 from flask_compress import Compress
 from datetime import datetime, timezone
 from flask_cors import CORS # Fornece suporte a CORS para integração com o Frontend
@@ -22,14 +22,12 @@ _cache = {"df": None, "ts": 0.0}
 CACHE_TTL = 600
 
 # DEFINIÇÃO DAS COLUNAS COMO VARIÁVEIS GLOBAIS
-COL_NOME = 'NOME'
 COL_ESCOLA = 'ESCOLA'
 COL_ESTADO = 'ESTADO'
 COL_MUNICIPIO = 'MUNICÍPIO'
 COL_CURSO = 'CURSO'
 COL_SEXO = 'SEXO'
 COL_PCD = 'PESSOA COM DEFICIÊNCIA (PCD)'
-COL_LINK = 'LINK DRIVE'
 
 def carregar_dataframe():
     if _cache["df"] is not None and time.time() - _cache["ts"] < CACHE_TTL:
@@ -254,35 +252,6 @@ def obter_dados(df):
         "mapa": dados_mapa
     }
 
-def busca_certificado(df):
-    nome_pesquisa = request.args.get('nome')
-    if not nome_pesquisa:
-        raise ValueError("Informe um nome")
-
-    if COL_NOME not in df.columns or COL_LINK not in df.columns or COL_ESTADO not in df.columns:
-        raise Exception(f"Colunas obrigatórias não encontradas na planilha. Disponíveis: {list(df.columns)}")
-
-    if COL_ESTADO in df.columns:
-        df[COL_ESTADO] = df[COL_ESTADO].astype(str).str.replace(', Brasil', '').str.strip()
-
-    filtro = df[df[COL_NOME].str.contains(nome_pesquisa, case=False, na=False)]
-    resultados = []
-
-    for _, linha in filtro.iterrows():
-        resultados.append({
-            "nome": linha[COL_NOME],
-            "estado": linha[COL_ESTADO],
-            "curso": linha[COL_CURSO],
-            "link": linha[COL_LINK]
-        })
-
-    return {
-        "total": len(resultados),
-        "resultados": resultados
-    }
-
-    
-    
 @app.route('/cache/clear', methods=['POST'])
 def cache_clear():
     _cache["df"] = None
@@ -302,20 +271,6 @@ def dados():
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
     
-@app.route('/certificados')
-def certificados():
-    try:
-        df = carregar_dataframe()
-        obter_certificados = busca_certificado(df)
-        return jsonify(obter_certificados)
-    except ValueError as e:
-        # Erros de validação (ex: falta nome) retornam 400
-        return jsonify({"erro": str(e)}), 400
-        
-    except Exception as e:
-        # Erros gerais (ex: planilha off, colunas erradas) retornam 500
-        return jsonify({"erro": "Erro interno: " + str(e)}), 500
-
 if __name__ == '__main__':
     # Rodando na porta 5000
     app.run(debug=True, host='0.0.0.0', port=5000)
